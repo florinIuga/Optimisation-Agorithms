@@ -1,0 +1,113 @@
+IUGA FLORIN-EUGEN
+335CA
+
+
+
+			solver_neopt.c:
+			===============
+
+In aceasta varianta, am abordat algoritmul clasic, algoritm care
+are avantajul simplitatii, avand la baza o simpla formula matematica.
+Evident, performantele obtinute sunt cele mai slabe. Ineficienta algoritmului
+provine din faptul ca, de fiecare data cand se incearca sa se acceseze
+elementul de pe pozitia (i, j) dintr-o matrice, compilatorul va genera
+expresii aritmetice care cresc considerabil costul.
+
+			solver_opt.c:
+			=============
+
+Aceasta solutie presupune imbunatatirea algoritmului clasic de inmultire
+a doua matrici. Crestea performantei este considerabila, avand in vedere
+faptul ca timpul de executie a scazut cu 10 secunde fata de varianta
+prezentata anterior pentru N = 1200.
+O prima imbunatatire a fost eficientizarea cache-ului. Astfel, inmultirea
+se face pe linii, inmultind cu transpusa matricii din dreapta. In acest
+mod, vor fi mult mai multe cache hits. In abordarea neoptima, producea
+multe cache miss-uri care conduc la un cost mare.
+
+In al doilea rand, am incercat sa imbunatatesc modul in care se cauta elementele din matrice
+in memorie, folosind pointeri. Astfel, se foloseste deferientierea in locul
+acceselor vectoriale clasice. Solutia functioneaza intrucat matricile sunt
+liniarizate, deci elementele sunt stocate continuu in memorie si se poate
+accesa fiecare element de pe linie folosind incrementarea pointer-ului.
+Totodata, am folosit keyword-ul "register" pentru a avea acces rapid la
+variabilele care sunt folosite intens in algoritm. Implementarea a fost
+inspirata din laboratorul 5, in care s-a prezentat "Inmultirea matricilor".
+
+			solver_blas.c:
+			==============
+
+Aceasta solutie a fost de departe cea mai ineficienta dintre cele implementate,
+folosind functia de inmultire cblas_dtrmm() din cblas.h, pentru matrici
+superior triunghiulare.
+Principalul boost de performanta este oferit de optimizarea cache-ului
+pentru functiile de Level 3 din BLAS.
+In aceasta implementare, operatiile de inmultire au fost efectuate folosind
+functia de inmultire din BLAS, iar adunarea a fost facuta manual.
+
+		opt_f_extra: Alegerea flag-urilor
+		=================================
+
+S-a obtinut o imbunatatire de aproximativ 18% fata de varianta opt_f.
+Am folosit urmatoare flag-uri in plus:
+-funroll-loops: pentru a se realiza deduceresa size-ului buclelor la compilare
+
+-fno-math-errno: pentru a nu seta flag-ul "errno" dupa apelul unor
+functii matematice care contin o singura instructiune. Astfel, se evita
+un cost aditional.
+
+-funsafe-math-optimizations: optimizeaza operatiile aritmetice cu virgula mobila, astfel
+se permite o eroare de aproximare a rezultatului (sub 0.001). Astfel, 
+nu se mai pierde timp prin rezultatele exacte.
+
+-ffinite-math-only: presupune ca rezultatele nu sunt NaNs sau +-Infs, ceea
+ce permite optimizarea algoritmului, iar corectitudinea este inca asigurata
+intrucat programul nu depinde de acestea.
+
+-fno-rounding-math: optimizeaza algoritmul prin dezactivarea modului de 
+rotunjire pentru operatii in virgula mobila (acesta este implicit oricum)
+
+-fno-signaling-nans:optimizeaza programul pentru ca nu mai permite semnale care
+raporteaza exceptiile legate de NaNs
+
+-fcx-limited-range: reduce costul pentru ca nu mai face verificari legate
+de rezultatul unor inmultiri/impartiri complexe (nu verifca ca rezultatul
+este NaN + I * NaN, nu era nevoie de acest flag neaparat, dar nu strica)
+
+
+		========= RESULTS =============
+
+REZULTATE VARIANTA NEOPTIMA:
+	Run=./tema2_neopt: N=400: Time=0.677918
+	Run=./tema2_neopt: N=800: Time=5.125127
+	Run=./tema2_neopt: N=1200: Time=17.034124
+	Run=./tema2_neopt: N=1400: Time=28.357183
+	Run=./tema2_neopt: N=1600: Time=49.796951
+
+REZULTATE VARIANTA OPTIMA:
+	Run=./tema2_opt_m: N=400: Time=0.348956
+	Run=./tema2_opt_m: N=800: Time=2.335105
+	Run=./tema2_opt_m: N=1200: Time=7.840984
+	Run=./tema2_opt_m: N=1400: Time=12.574489
+	Run=./tema2_opt_m: N=1600: Time=19.195185
+
+REZULTATE VARIANTA OPTIMA_F:
+	Run=./tema2_opt_f: N=400: Time=0.148487
+	Run=./tema2_opt_f: N=800: Time=0.829509
+	Run=./tema2_opt_f: N=1200: Time=2.931367
+	Run=./tema2_opt_f: N=1400: Time=4.982760
+	Run=./tema2_opt_f: N=1600: Time=8.558498
+
+REZULTATE VARIANTA OPTIMA_F_EXTRA:
+	Run=./tema2_opt_f_extra: N=400: Time=0.120698
+	Run=./tema2_opt_f_extra: N=800: Time=0.713176
+	Run=./tema2_opt_f_extra: N=1200: Time=2.425696
+	Run=./tema2_opt_f_extra: N=1400: Time=3.893275
+	Run=./tema2_opt_f_extra: N=1600: Time=7.392794
+
+REZULTATE VARIANTA BLAS:
+	Run=./tema2_blas: N=400: Time=0.051228
+	Run=./tema2_blas: N=800: Time=0.222042
+	Run=./tema2_blas: N=1200: Time=0.685409
+	Run=./tema2_blas: N=1400: Time=1.053314
+	Run=./tema2_blas: N=1600: Time=1.531448
